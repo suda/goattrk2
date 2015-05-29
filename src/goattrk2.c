@@ -60,7 +60,7 @@ unsigned mr = DEFAULTMIXRATE;
 unsigned writer = 0;
 unsigned hardsid = 0;
 unsigned catweasel = 0;
-unsigned interpolate = 0;
+unsigned interpolate = 2;
 unsigned residdelay = 0;
 unsigned hardsidbufinteractive = 20;
 unsigned hardsidbufplayback = 400;
@@ -127,6 +127,10 @@ int main(int argc, char **argv)
   // Open datafile
   io_openlinkeddatafile(datafile);
 
+#ifdef __MACOSX__
+    InitializeMacMidi();
+#endif
+
   // Load configuration
   #ifdef __WIN32__
   GetModuleFileName(NULL, filename, MAX_PATHNAME);
@@ -137,7 +141,11 @@ int main(int argc, char **argv)
   strcpy(filename, "PROGDIR:goattrk2.cfg");
   #else
   strcpy(filename, getenv("HOME"));
+#ifdef __MACOSX__
+  strcat(filename, "/Library/Preferences/org.c64.covertbitops.goattrk.cfg");
+#else
   strcat(filename, "/.goattrk/goattrk2.cfg");
+#endif
   #endif
   configfile = fopen(filename, "rt");
   if (configfile)
@@ -218,7 +226,7 @@ int main(int argc, char **argv)
           printf("%s\n", usage[y]);
 #endif
         return EXIT_SUCCESS;
-        
+
         case 'Z':
         sscanf(&argv[c][2], "%u", &residdelay);
         break;
@@ -301,10 +309,6 @@ int main(int argc, char **argv)
         writer = 1;
         break;
 
-        case 'X':
-        sscanf(&argv[c][2], "%u", &win_fullscreen);
-        break;
-
         case 'C':
         sscanf(&argv[c][2], "%u", &catweasel);
         break;
@@ -318,7 +322,7 @@ int main(int argc, char **argv)
     {
       char startpath[MAX_PATHNAME];
 
-      strcpy(songfilename, argv[c]);
+	  strcpy(songfilename, argv[c]);
       for (d = strlen(argv[c])-1; d >= 0; d--)
       {
         if ((argv[c][d] == '/') || (argv[c][d] == '\\'))
@@ -386,16 +390,16 @@ int main(int argc, char **argv)
   sound_uninit();
 
   // Save configuration
-  #ifndef __WIN32__
-  #ifdef __amigaos__
-  strcpy(filename, "PROGDIR:goattrk2.cfg");
-  #else
+#ifndef __WIN32__
   strcpy(filename, getenv("HOME"));
+#ifdef __MACOSX__
+  strcat(filename, "/Library/Preferences/org.c64.covertbitops.goattrk.cfg");
+#else
   strcat(filename, "/.goattrk");
   mkdir(filename, S_IRUSR | S_IWUSR | S_IXUSR);
   strcat(filename, "/goattrk2.cfg");
-  #endif
-  #endif
+#endif
+#endif
   configfile = fopen(filename, "wt");
   if (configfile)
   {
@@ -505,6 +509,9 @@ void waitkeymouse(void)
     if ((rawkey) || (key)) break;
     if (win_quitted) break;
     if (mouseb) break;
+#ifdef __MACOSX__
+    if (MidiEventPending() != 0) break;
+#endif
   }
 
   converthex();
@@ -514,7 +521,7 @@ void waitkeymousenoupdate(void)
 {
   for (;;)
   {
-      fliptoscreen();
+  	fliptoscreen();
     getkey();
     if ((rawkey) || (key)) break;
     if (win_quitted) break;
@@ -528,7 +535,7 @@ void waitkeynoupdate(void)
 {
   for (;;)
   {
-      fliptoscreen();
+  	fliptoscreen();
     getkey();
     if ((rawkey) || (key)) break;
     if ((mouseb) && (!prevmouseb)) break;
@@ -602,9 +609,9 @@ void mousecommands(void)
   {
     if ((mousey == 2) && (mousex >= 13 + c*15) && (mousex <= 14 + c*15))
     {
-        if ((!prevmouseb) || (mouseheld > HOLDDELAY))
-        {
-        if (mouseb & MOUSEB_LEFT) 
+    	if ((!prevmouseb) || (mouseheld > HOLDDELAY))
+    	{
+        if (mouseb & MOUSEB_LEFT)
         {
           epchn = c;
           nextpattern();
@@ -650,8 +657,8 @@ void mousecommands(void)
         }
         else
         {
-            if (mouseb & MOUSEB_LEFT)
-            {
+        	if (mouseb & MOUSEB_LEFT)
+        	{
             if (mousey == 2) eppos--;
             if (mousey == 34) eppos++;
           }
@@ -1066,11 +1073,11 @@ void load(void)
   {
     if (!shiftpressed)
     {
-      if (fileselector(songfilename, songpath, songfilter, "LOAD SONG", 0))
-        loadsong();
-    }
-    else
-    {
+    if (fileselector(songfilename, songpath, songfilter, "LOAD SONG", 0))
+      loadsong();
+  }
+  else
+  {
       if (fileselector(songfilename, songpath, songfilter, "MERGE SONG", 0))
         mergesong();
     }
@@ -1324,8 +1331,8 @@ void getparam(FILE *handle, unsigned *value)
 
   for (;;)
   {
-    if (feof(handle)) return;
-    fgets(configbuf, MAX_PATHNAME, handle);
+      if (feof(handle)) return;
+      fgets(configbuf, MAX_PATHNAME, handle);
     if ((configbuf[0]) && (configbuf[0] != ';') && (configbuf[0] != ' ') && (configbuf[0] != 13) && (configbuf[0] != 10)) break;
   }
 
@@ -1379,7 +1386,7 @@ void getfloatparam(FILE *handle, float *value)
     if (feof(handle)) return;
     fgets(configbuf, MAX_PATHNAME, handle);
     if ((configbuf[0]) && (configbuf[0] != ';') && (configbuf[0] != ' ') && (configbuf[0] != 13) && (configbuf[0] != 10)) break;
-  }
+}
 
   configptr = configbuf;
   *value = 0.0f;

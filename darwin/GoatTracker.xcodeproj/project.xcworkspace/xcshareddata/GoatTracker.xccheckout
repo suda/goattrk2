@@ -1,0 +1,41 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+	<key>IDESourceControlProjectFavoriteDictionaryKey</key>
+	<false/>
+	<key>IDESourceControlProjectIdentifier</key>
+	<string>5D423AB4-7EB0-4A3C-84DA-F939468E4A31</string>
+	<key>IDESourceControlProjectName</key>
+	<string>GoatTracker</string>
+	<key>IDESourceControlProjectOriginsDictionary</key>
+	<dict>
+		<key>ADBC8C3D6AAB0D57F4EEE1B0C0315075DF06122D</key>
+		<string>github.com:suda/goattrk2.git</string>
+	</dict>
+	<key>IDESourceControlProjectPath</key>
+	<string>darwin/GoatTracker.xcodeproj</string>
+	<key>IDESourceControlProjectRelativeInstallPathDictionary</key>
+	<dict>
+		<key>ADBC8C3D6AAB0D57F4EEE1B0C0315075DF06122D</key>
+		<string>../../..</string>
+	</dict>
+	<key>IDESourceControlProjectURL</key>
+	<string>github.com:suda/goattrk2.git</string>
+	<key>IDESourceControlProjectVersion</key>
+	<integer>111</integer>
+	<key>IDESourceControlProjectWCCIdentifier</key>
+	<string>ADBC8C3D6AAB0D57F4EEE1B0C0315075DF06122D</string>
+	<key>IDESourceControlProjectWCConfigurations</key>
+	<array>
+		<dict>
+			<key>IDESourceControlRepositoryExtensionIdentifierKey</key>
+			<string>public.vcs.git</string>
+			<key>IDESourceControlWCCIdentifierKey</key>
+			<string>ADBC8C3D6AAB0D57F4EEE1B0C0315075DF06122D</string>
+			<key>IDESourceControlWCCName</key>
+			<string>goattrk2</string>
+		</dict>
+	</array>
+</dict>
+</plist>

@@ -27,16 +27,17 @@ unsigned oldmousepixelx = 0xffffffff;
 unsigned oldmousepixely = 0xffffffff;
 int mouseheld = 0;
 int region[MAX_ROWS];
+int altpressed = 0;
 
 void loadexternalpalette(void);
 void initicon(void);
 
-inline void setcharcolor(unsigned *dptr, short ch, short color)
+static inline void setcharcolor(unsigned *dptr, short ch, short color)
 {
   *dptr = (ch & 0xff) | (color << 16);
 }
 
-inline void setcolor(unsigned *dptr, short color)
+static inline void setcolor(unsigned *dptr, short color)
 {
   *dptr = (*dptr & 0xffff) | (color << 16);
 }
@@ -48,8 +49,12 @@ int initscreen(void)
   if (SDL_Init(SDL_INIT_VIDEO | SDL_INIT_AUDIO | SDL_INIT_TIMER) < 0)
     return 0;
   win_openwindow("GoatTracker", NULL);
+#ifdef __MACOSX__
+  win_setmousemode(MOUSE_ALWAYS_VISIBLE);
+#else
   win_setmousemode(MOUSE_ALWAYS_HIDDEN);
   initicon();
+#endif
 
   if (!gfx_init(MAX_COLUMNS * 8, MAX_ROWS * 16, 60, 0))
   {
@@ -57,7 +62,7 @@ int initscreen(void)
     if (!gfx_init(MAX_COLUMNS * 8, MAX_ROWS * 16, 60, 0))
       return 0;
   }
-   
+
   scrbuffer = malloc(MAX_COLUMNS * MAX_ROWS * sizeof(unsigned));
   prevscrbuffer = malloc(MAX_COLUMNS * MAX_ROWS * sizeof(unsigned));
   if ((!scrbuffer) || (!prevscrbuffer)) return 0;
@@ -127,18 +132,18 @@ void initicon(void)
   int handle = io_open("goattrk2.bmp");
   if (handle != -1)
   {
-    SDL_RWops *rw;
-    SDL_Surface *icon;
-    char *iconbuffer;
+  	SDL_RWops *rw;
+  	SDL_Surface *icon;
+  	char *iconbuffer;
     int size;
 
     size = io_lseek(handle, 0, SEEK_END);
-    io_lseek(handle, 0, SEEK_SET);
-    iconbuffer = malloc(size);
-    if (iconbuffer)
-    {
-      io_read(handle, iconbuffer, size);
-      io_close(handle);
+  	io_lseek(handle, 0, SEEK_SET);
+  	iconbuffer = malloc(size);
+  	if (iconbuffer)
+  	{
+    	io_read(handle, iconbuffer, size);
+    	io_close(handle);
       rw = SDL_RWFromMem(iconbuffer, size);
       icon = SDL_LoadBMP_RW(rw, 0);
       SDL_WM_SetIcon(icon, 0);
@@ -160,8 +165,8 @@ void closescreen(void)
   }
   if (chardata)
   {
-    free(chardata);
-    chardata = NULL;
+  	free(chardata);
+  	chardata = NULL;
   }
 
   gfxinitted = 0;
@@ -314,19 +319,19 @@ void fliptoscreen(void)
   // Mark previous mousecursor area changed if mouse moved
   if ((mousepixelx != oldmousepixelx) || (mousepixely != oldmousepixely))
   {
-    if ((oldmousepixelx >= 0) && (oldmousepixely >= 0))
-    {
-      int sy = oldmousepixely >> 4;
-      int ey = (oldmousepixely + MOUSESIZEY - 1) >> 4;
-      int sx = oldmousepixelx >> 3;
-      int ex = (oldmousepixelx + MOUSESIZEX - 1) >> 3;
+  	if ((oldmousepixelx >= 0) && (oldmousepixely >= 0))
+  	{
+  	  int sy = oldmousepixely >> 4;
+  	  int ey = (oldmousepixely + MOUSESIZEY - 1) >> 4;
+  	  int sx = oldmousepixelx >> 3;
+  	  int ex = (oldmousepixelx + MOUSESIZEX - 1) >> 3;
 
       if (ey >= MAX_ROWS) ey = MAX_ROWS - 1;
-      if (ex >= MAX_COLUMNS) ex = MAX_COLUMNS - 1;
+  	  if (ex >= MAX_COLUMNS) ex = MAX_COLUMNS - 1;
 
-      for (y = sy; y <= ey; y++)
-      {
-        for (x = sx; x <= ex; x++)
+  	  for (y = sy; y <= ey; y++)
+  	  {
+  		  for (x = sx; x <= ex; x++)
           prevscrbuffer[y*MAX_COLUMNS+x] = 0xffffffff;
       }
     }
@@ -335,7 +340,7 @@ void fliptoscreen(void)
   // If redraw requested, mark whole screen changed
   if (gfx_redraw)
   {
-    gfx_redraw = 0;
+  	gfx_redraw = 0;
     memset(prevscrbuffer, 0xff, MAX_COLUMNS*MAX_ROWS*sizeof(unsigned));
   }
 
@@ -349,7 +354,7 @@ void fliptoscreen(void)
       // Check if char changed
       if (*sptr != *cmpptr)
       {
-        *cmpptr = *sptr;
+      	*cmpptr = *sptr;
         region[y] = 1;
         regionschanged = 1;
 
@@ -394,11 +399,13 @@ void fliptoscreen(void)
   // Redraw mouse if text was redrawn
   if (regionschanged)
   {
-    int sy = mousepixely >> 4;
-    int ey = (mousepixely + MOUSESIZEY - 1) >> 4;
-    if (ey >= MAX_ROWS) ey = MAX_ROWS - 1;
+  	int sy = mousepixely >> 4;
+  	int ey = (mousepixely + MOUSESIZEY - 1) >> 4;
+  	if (ey >= MAX_ROWS) ey = MAX_ROWS - 1;
 
+#ifndef __MACOSX__
     gfx_drawsprite(mousepixelx, mousepixely, 0x1);
+#endif
     for (y = sy; y <= ey; y++)
       region[y] = 1;
   }
@@ -413,7 +420,9 @@ void fliptoscreen(void)
   {
     if (region[y])
     {
+#ifndef __MACOSX__
       SDL_UpdateRect(gfx_screen, 0, y*16, MAX_COLUMNS*8, 16);
+#endif
       region[y] = 0;
     }
   }
@@ -456,6 +465,10 @@ void getkey(void)
       (win_keystate[KEY_CTRL])||(win_keystate[KEY_RIGHTCTRL]))
     shiftpressed = 1;
 
+  altpressed = 0;
+  if (win_keystate[KEY_ALT] || win_keystate[KEY_RIGHTALT])
+	  altpressed = 1;
+
   if (rawkey == SDLK_KP_ENTER)
   {
     key = KEY_ENTER;
@@ -472,4 +485,9 @@ void getkey(void)
   if (rawkey == SDLK_KP7) key = '7';
   if (rawkey == SDLK_KP8) key = '8';
   if (rawkey == SDLK_KP9) key = '9';
+
+#ifdef __MACOSX__	
+  SDL_UpdateRect(gfx_screen, 0, 0, MAX_COLUMNS*8, MAX_ROWS*16);
+#endif
 }
+

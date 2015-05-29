@@ -6,6 +6,23 @@
 
 #include "goattrk2.h"
 
+#ifdef __MACOSX__
+
+int virtualkeycode = 0xff;
+
+// Use actual physical keycodes, to make sure the virtual tracker keyboard is
+// the same on all keyboard layouts
+unsigned char notekeytbl1[] = {0x06, 0x01, 0x07, 0x02, 0x08, 0x09,
+0x05, 0x0b, 0x04, 0x2d, 0x26, 0x2e, 0x2b, 0x25, 0x2f};
+
+unsigned char notekeytbl2[] = {0x0c, 0x13, 0x0d, 0x14, 0x0e, 0x0f,
+0x17, 0x11, 0x16, 0x10, 0x1a, 0x20, 0x22, 0x19, 0x1f, 0x1d, 0x23};
+
+unsigned char dmckeytbl[] = {0x00, 0x0d, 0x01, 0x0e, 0x02, 0x03,
+0x11, 0x05, 0x10, 0x04, 0x20, 0x26, 0x28, 0x1f, 0x25, 0x23};
+
+#else
+
 unsigned char notekeytbl1[] = {KEY_Z, KEY_S, KEY_X, KEY_D, KEY_C, KEY_V,
   KEY_G, KEY_B, KEY_H, KEY_N, KEY_J, KEY_M, KEY_COMMA, KEY_L, KEY_COLON};
 
@@ -14,6 +31,8 @@ unsigned char notekeytbl2[] = {KEY_Q, KEY_2, KEY_W, KEY_3, KEY_E, KEY_R,
 
 unsigned char dmckeytbl[] = {KEY_A, KEY_W, KEY_S, KEY_E, KEY_D, KEY_F,
   KEY_T, KEY_G, KEY_Y, KEY_H, KEY_U, KEY_J, KEY_K, KEY_O, KEY_L, KEY_P};
+
+#endif
 
 unsigned char patterncopybuffer[MAX_PATTROWS*4+4];
 unsigned char cmdcopybuffer[MAX_PATTROWS*4+4];
@@ -37,19 +56,59 @@ void patterncommands(void)
   switch(key)
   {
     case '<':
-    case '(':
+    //case '(':
     case '[':
     prevpattern();
     break;
 
     case '>':
-    case ')':
+    //case ')':
     case ']':
     nextpattern();
     break;
   }
   {
     int newnote = -1;
+#ifdef __MACOSX__
+    int midinote = -1;
+
+	// Use actual physical keycodes, to make sure the virtual tracker keyboard is
+	// the same on all keyboard layouts
+	if (virtualkeycode != 0xff)
+	{
+      switch (keypreset)
+      {
+		  case KEY_TRACKER:
+			  for (c = 0; c < sizeof(notekeytbl1); c++)
+			  {
+				  if ((virtualkeycode == notekeytbl1[c]) && (!epcolumn) && (!shiftpressed))
+				  {
+					  newnote = FIRSTNOTE+c+epoctave*12;
+				  }
+			  }
+			  for (c = 0; c < sizeof(notekeytbl2); c++)
+			  {
+				  if ((virtualkeycode == notekeytbl2[c]) && (!epcolumn) && (!shiftpressed))
+				  {
+					  newnote = FIRSTNOTE+c+(epoctave+1)*12;
+				  }
+			  }
+			  break;
+			  
+		  case KEY_DMC:
+			  for (c = 0; c < sizeof(dmckeytbl); c++)
+			  {
+				  if ((virtualkeycode == dmckeytbl[c]) && (!epcolumn) && (!shiftpressed))
+				  {
+					  newnote = FIRSTNOTE+c+epoctave*12;
+				  }
+			  }
+			  break;
+      }
+	}
+	  
+#else
+	  
     if (key)
     {
       switch (keypreset)
@@ -82,7 +141,17 @@ void patterncommands(void)
         break;
       }
     }
-
+#endif
+	  
+	  
+#ifdef __MACOSX__
+#ifndef GT2_TOOLS
+    midinote = GetMidiNote();
+#endif
+	if (midinote != -1 && (!epcolumn) && (!shiftpressed))
+		newnote = midinote;
+#endif
+	  
     if (newnote > LASTNOTE) newnote = -1;
     if ((rawkey == 0x08) && (!epcolumn)) newnote = REST;
     if ((rawkey == 0x14) && (!epcolumn)) newnote = KEYOFF;
@@ -117,9 +186,9 @@ void patterncommands(void)
           }
           else
           {
-            if (shiftpressed)
-            {
-              int pos = gettablelen(WTBL);
+          	if (shiftpressed)
+          	{
+          		int pos = gettablelen(WTBL);
               if (pos >= MAX_TABLELEN-1) pos = MAX_TABLELEN - 1;
               pattern[epnum[epchn]][eppos*4+3] = pos + 1;
               gototable(WTBL, pos);
@@ -136,9 +205,9 @@ void patterncommands(void)
           }
           else
           {
-            if (shiftpressed)
-            {
-              int pos = gettablelen(PTBL);
+          	if (shiftpressed)
+          	{
+          		int pos = gettablelen(PTBL);
               if (pos >= MAX_TABLELEN-1) pos = MAX_TABLELEN - 1;
               pattern[epnum[epchn]][eppos*4+3] = pos + 1;
               gototable(PTBL, pos);
@@ -155,9 +224,9 @@ void patterncommands(void)
           }
           else
           {
-            if (shiftpressed)
-            {
-              int pos = gettablelen(FTBL);
+          	if (shiftpressed)
+          	{
+          		int pos = gettablelen(FTBL);
               if (pos >= MAX_TABLELEN-1) pos = MAX_TABLELEN - 1;
               pattern[epnum[epchn]][eppos*4+3] = pos + 1;
               gototable(FTBL, pos);
@@ -184,9 +253,9 @@ void patterncommands(void)
           {
             if (shiftpressed)
             {
-              int pos = findfreespeedtable();
-              if (pos >= 0)
-              {
+            	int pos = findfreespeedtable();
+            	if (pos >= 0)
+            	{
                 pattern[epnum[epchn]][eppos*4+3] = pos + 1;
                 gototable(STBL, pos);
                 return;
@@ -215,9 +284,9 @@ void patterncommands(void)
           {
             if (shiftpressed)
             {
-              int pos = findfreespeedtable();
-              if (pos >= 0)
-              {
+            	int pos = findfreespeedtable();
+            	if (pos >= 0)
+            	{
                 pattern[epnum[epchn]][eppos*4+3] = pos + 1;
                 gototable(STBL, pos);
                 return;
@@ -244,9 +313,9 @@ void patterncommands(void)
           {
             if (shiftpressed)
             {
-              int pos = findfreespeedtable();
-              if (pos >= 0)
-              {
+            	int pos = findfreespeedtable();
+            	if (pos >= 0)
+            	{
                 pattern[epnum[epchn]][eppos*4+3] = pos + 1;
                 gototable(STBL, pos);
                 return;
@@ -302,20 +371,20 @@ void patterncommands(void)
   }
   switch(rawkey)
   {
-    case KEY_O:
-    if (shiftpressed) shrinkpattern();
-    break;
+  	case KEY_O:
+  	if (shiftpressed) shrinkpattern();
+  	break;
 
-    case KEY_P:
-    if (shiftpressed) expandpattern();
-    break;
+  	case KEY_P:
+  	if (shiftpressed) expandpattern();
+  	break;
 
-    case KEY_J:
-    if (shiftpressed) joinpattern();
-    break;
+  	case KEY_J:
+  	if (shiftpressed) joinpattern();
+  	break;
 
-    case KEY_K:
-    if (shiftpressed) splitpattern();
+  	case KEY_K:
+  	if (shiftpressed) splitpattern();
     break;
 
     case KEY_Z:
@@ -651,14 +720,14 @@ void patterncommands(void)
           c = eppos;
         for (; c >= 0; c--)
         {
-          if ((pattern[epnum[epchn]][c*4] >= FIRSTNOTE) &&
-              (pattern[epnum[epchn]][c*4] <= LASTNOTE))
-          {
-            int delta;
+        	if ((pattern[epnum[epchn]][c*4] >= FIRSTNOTE) &&
+        	    (pattern[epnum[epchn]][c*4] <= LASTNOTE))
+        	{
+        		int delta;
             int pitch1;
             int pitch2;
             int pos;
-            int note = pattern[epnum[epchn]][c*4] - FIRSTNOTE;
+        		int note = pattern[epnum[epchn]][c*4] - FIRSTNOTE;
             int right = pattern[epnum[epchn]][eppos*4+3] & 0xf;
             int left = pattern[epnum[epchn]][eppos*4+3] >> 4;
 
@@ -672,7 +741,7 @@ void patterncommands(void)
 
             if (pattern[epnum[epchn]][eppos*4+2] == CMD_VIBRATO)
             {
-              if (delta > 0xff) delta = 0xff;
+            	if (delta > 0xff) delta = 0xff;
             }
             pos = makespeedtable(delta, MST_RAW, 1);
             pattern[epnum[epchn]][eppos*4+3] = pos + 1;
@@ -786,32 +855,68 @@ void patterncommands(void)
     break;
 
     case KEY_DEL:
-    if (epmarkchn == epchn) epmarkchn = -1;
-    if ((pattlen[epnum[epchn]]-eppos)*4-4 >= 0)
-    {
-      memmove(&pattern[epnum[epchn]][eppos*4],
-        &pattern[epnum[epchn]][eppos*4+4],
-        (pattlen[epnum[epchn]]-eppos)*4-4);
-      pattern[epnum[epchn]][pattlen[epnum[epchn]]*4-4] = REST;
-      pattern[epnum[epchn]][pattlen[epnum[epchn]]*4-3] = 0x00;
-      pattern[epnum[epchn]][pattlen[epnum[epchn]]*4-2] = 0x00;
-      pattern[epnum[epchn]][pattlen[epnum[epchn]]*4-1] = 0x00;
-    }
-    else
-    {
-      if (eppos == pattlen[epnum[epchn]])
-      {
-        if (pattlen[epnum[epchn]] > 1)
-        {
-          pattern[epnum[epchn]][pattlen[epnum[epchn]]*4-4] = ENDPATT;
-          pattern[epnum[epchn]][pattlen[epnum[epchn]]*4-3] = 0x00;
-          pattern[epnum[epchn]][pattlen[epnum[epchn]]*4-2] = 0x00;
-          pattern[epnum[epchn]][pattlen[epnum[epchn]]*4-1] = 0x00;
-          countthispattern();
-          eppos = pattlen[epnum[epchn]];
-        }
-      }
-    }
+	if (altpressed)
+	{
+		if (epmarkchn == epchn) epmarkchn = -1;
+		if ((pattlen[epnum[epchn]]-eppos)*4-4 >= 0)
+		{
+			memmove(&pattern[epnum[epchn]][eppos*4+4],
+					&pattern[epnum[epchn]][eppos*4],
+					(pattlen[epnum[epchn]]-eppos)*4-4);
+			pattern[epnum[epchn]][eppos*4] = REST;
+			pattern[epnum[epchn]][eppos*4+1] = 0x00;
+			pattern[epnum[epchn]][eppos*4+2] = 0x00;
+			pattern[epnum[epchn]][eppos*4+3] = 0x00;
+		}
+		else
+		{
+			if (eppos == pattlen[epnum[epchn]])
+			{
+				if (pattlen[epnum[epchn]] < MAX_PATTROWS)
+				{
+					pattern[epnum[epchn]][eppos*4] = REST;
+					pattern[epnum[epchn]][eppos*4+1] = 0x00;
+					pattern[epnum[epchn]][eppos*4+2] = 0x00;
+					pattern[epnum[epchn]][eppos*4+3] = 0x00;
+					pattern[epnum[epchn]][eppos*4+4] = ENDPATT;
+					pattern[epnum[epchn]][eppos*4+5] = 0x00;
+					pattern[epnum[epchn]][eppos*4+6] = 0x00;
+					pattern[epnum[epchn]][eppos*4+7] = 0x00;
+					countthispattern();
+					eppos = pattlen[epnum[epchn]];
+				}
+			}
+		}
+	}
+	else
+	{
+		if (epmarkchn == epchn) epmarkchn = -1;
+		if ((pattlen[epnum[epchn]]-eppos)*4-4 >= 0)
+		{
+		  memmove(&pattern[epnum[epchn]][eppos*4],
+			&pattern[epnum[epchn]][eppos*4+4],
+			(pattlen[epnum[epchn]]-eppos)*4-4);
+		  pattern[epnum[epchn]][pattlen[epnum[epchn]]*4-4] = REST;
+		  pattern[epnum[epchn]][pattlen[epnum[epchn]]*4-3] = 0x00;
+		  pattern[epnum[epchn]][pattlen[epnum[epchn]]*4-2] = 0x00;
+		  pattern[epnum[epchn]][pattlen[epnum[epchn]]*4-1] = 0x00;
+		}
+		else
+		{
+		  if (eppos == pattlen[epnum[epchn]])
+		  {
+			if (pattlen[epnum[epchn]] > 1)
+			{
+			  pattern[epnum[epchn]][pattlen[epnum[epchn]]*4-4] = ENDPATT;
+			  pattern[epnum[epchn]][pattlen[epnum[epchn]]*4-3] = 0x00;
+			  pattern[epnum[epchn]][pattlen[epnum[epchn]]*4-2] = 0x00;
+			  pattern[epnum[epchn]][pattlen[epnum[epchn]]*4-1] = 0x00;
+			  countthispattern();
+			  eppos = pattlen[epnum[epchn]];
+			}
+		  }
+		}
+	}
     break;
 
     case KEY_INS:
@@ -852,8 +957,8 @@ void patterncommands(void)
       recordmode ^= 1;
     else
     {
-      if (lastsonginit != PLAY_PATTERN)
-      {
+    	if (lastsonginit != PLAY_PATTERN)
+    	{
         if (eseditpos != espos[eschn])
         {
           int c;
@@ -1114,10 +1219,10 @@ void shrinkpattern(void)
 
   for (d = 0; d < nl; d++)
   {
-    pattern[c][d*4] = pattern[c][d*2*4];
-    pattern[c][d*4+1] = pattern[c][d*2*4+1];
-    pattern[c][d*4+2] = pattern[c][d*2*4+2];
-    pattern[c][d*4+3] = pattern[c][d*2*4+3];
+  	pattern[c][d*4] = pattern[c][d*2*4];
+  	pattern[c][d*4+1] = pattern[c][d*2*4+1];
+  	pattern[c][d*4+2] = pattern[c][d*2*4+2];
+  	pattern[c][d*4+3] = pattern[c][d*2*4+3];
   }
 
   pattern[c][nl*4] = ENDPATT;
@@ -1145,19 +1250,19 @@ void expandpattern(void)
 
   for (d = 0; d <= nl; d++)
   {
-    if (d & 1)
-    {
-      temp[d*4] = REST;
-      temp[d*4+1] = 0;
-      temp[d*4+2] = 0;
-      temp[d*4+3] = 0;
-    }
-    else
-    {
-      temp[d*4] = pattern[c][d*2];
-      temp[d*4+1] = pattern[c][d*2+1];
-      temp[d*4+2] = pattern[c][d*2+2];
-      temp[d*4+3] = pattern[c][d*2+3];
+  	if (d & 1)
+  	{
+  		temp[d*4] = REST;
+  		temp[d*4+1] = 0;
+  		temp[d*4+2] = 0;
+  		temp[d*4+3] = 0;
+  	}
+  	else
+  	{
+  	  temp[d*4] = pattern[c][d*2];
+    	temp[d*4+1] = pattern[c][d*2+1];
+  	  temp[d*4+2] = pattern[c][d*2+2];
+  	  temp[d*4+3] = pattern[c][d*2+3];
     }
   }
 
@@ -1181,37 +1286,37 @@ void splitpattern(void)
 
   if (insertpattern(c))
   {
-    int oldesnum = esnum;
+  	int oldesnum = esnum;
     int oldeschn = eschn;
     int oldeseditpos = eseditpos;
 
-    for (d = eppos; d <= l; d++)
-    {
-      pattern[c+1][(d-eppos)*4] = pattern[c][d*4];
-      pattern[c+1][(d-eppos)*4+1] = pattern[c][d*4+1];
-      pattern[c+1][(d-eppos)*4+2] = pattern[c][d*4+2];
-      pattern[c+1][(d-eppos)*4+3] = pattern[c][d*4+3];
-    }
-    pattern[c][eppos*4] = ENDPATT;
-    pattern[c][eppos*4+1] = 0;
-    pattern[c][eppos*4+2] = 0;
-    pattern[c][eppos*4+3] = 0;
+  	for (d = eppos; d <= l; d++)
+  	{
+  		pattern[c+1][(d-eppos)*4] = pattern[c][d*4];
+  		pattern[c+1][(d-eppos)*4+1] = pattern[c][d*4+1];
+  		pattern[c+1][(d-eppos)*4+2] = pattern[c][d*4+2];
+  		pattern[c+1][(d-eppos)*4+3] = pattern[c][d*4+3];
+  	}
+  	pattern[c][eppos*4] = ENDPATT;
+  	pattern[c][eppos*4+1] = 0;
+  	pattern[c][eppos*4+2] = 0;
+  	pattern[c][eppos*4+3] = 0;
 
-    countpatternlengths();
+  	countpatternlengths();
 
     for (esnum = 0; esnum < MAX_SONGS; esnum++)
     {
       for (eschn = 0; eschn < MAX_CHN; eschn++)
       {
-        for (eseditpos = 0; eseditpos < songlen[esnum][eschn]; eseditpos++)
-        {
-          if (songorder[esnum][eschn][eseditpos] == c)
-          {
-            songorder[esnum][eschn][eseditpos] = c+1;
-            insertorder(c);
-          }
-        }
-      }
+      	for (eseditpos = 0; eseditpos < songlen[esnum][eschn]; eseditpos++)
+    	  {
+    		  if (songorder[esnum][eschn][eseditpos] == c)
+    		  {
+    			  songorder[esnum][eschn][eseditpos] = c+1;
+    			  insertorder(c);
+    		  }
+    		}
+    	}
     }
     eschn = oldeschn;
     eseditpos = oldeseditpos;
@@ -1234,26 +1339,26 @@ void joinpattern(void)
 
   if (insertpattern(c))
   {
-    int oldesnum = esnum;
+  	int oldesnum = esnum;
     int oldeschn = eschn;
     int oldeseditpos = eseditpos;
-    int e, f;
+  	int e, f;
     d++;
 
     for (e = 0; e < pattlen[c]; e++)
     {
-      pattern[c+1][e*4] = pattern[c][e*4];
-      pattern[c+1][e*4+1] = pattern[c][e*4+1];
-      pattern[c+1][e*4+2] = pattern[c][e*4+2];
-      pattern[c+1][e*4+3] = pattern[c][e*4+3];
+    	pattern[c+1][e*4] = pattern[c][e*4];
+    	pattern[c+1][e*4+1] = pattern[c][e*4+1];
+    	pattern[c+1][e*4+2] = pattern[c][e*4+2];
+    	pattern[c+1][e*4+3] = pattern[c][e*4+3];
     }
     for (f = 0; f < pattlen[d]; f++)
     {
-      pattern[c+1][e*4] = pattern[d][f*4];
-      pattern[c+1][e*4+1] = pattern[d][f*4+1];
-       pattern[c+1][e*4+2] = pattern[d][f*4+2];
-       pattern[c+1][e*4+3] = pattern[d][f*4+3];
-       e++;
+    	pattern[c+1][e*4] = pattern[d][f*4];
+    	pattern[c+1][e*4+1] = pattern[d][f*4+1];
+     	pattern[c+1][e*4+2] = pattern[d][f*4+2];
+     	pattern[c+1][e*4+3] = pattern[d][f*4+3];
+     	e++;
     }
     pattern[c+1][e*4] = ENDPATT;
     pattern[c+1][e*4+1] = 0;
@@ -1266,15 +1371,15 @@ void joinpattern(void)
     {
       for (eschn = 0; eschn < MAX_CHN; eschn++)
       {
-        for (eseditpos = 0; eseditpos < songlen[esnum][eschn]; eseditpos++)
-        {
-          if ((songorder[esnum][eschn][eseditpos] == c) && (songorder[esnum][eschn][eseditpos+1] == d))
-          {
+      	for (eseditpos = 0; eseditpos < songlen[esnum][eschn]; eseditpos++)
+    	  {
+    		  if ((songorder[esnum][eschn][eseditpos] == c) && (songorder[esnum][eschn][eseditpos+1] == d))
+    		  {
             deleteorder();
             songorder[esnum][eschn][eseditpos] = c+1;
-          }
-        }
-      }
+    		  }
+    		}
+    	}
     }
     eschn = oldeschn;
     eseditpos = oldeseditpos;
@@ -1282,13 +1387,13 @@ void joinpattern(void)
 
     findusedpatterns();
     {
-      int del1 = pattused[c];
-      int del2 = pattused[d];
+    	int del1 = pattused[c];
+    	int del2 = pattused[d];
 
       if (!del1)
       {
-        deletepattern(c);
-        if (d > c) d--;
+      	deletepattern(c);
+      	if (d > c) d--;
       }
       if (!del2) 
         deletepattern(d);

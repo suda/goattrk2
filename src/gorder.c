@@ -119,13 +119,13 @@ void orderlistcommands(void)
     break;
 
     case '>':
-    case ')':
+    //case ')':
     case ']':
     nextsong();
     break;
 
     case '<':
-    case '(':
+    //case '(':
     case '[':
     prevsong();
     break;
@@ -261,8 +261,8 @@ void orderlistcommands(void)
     }
     else
     {
-      for (c = 0; c < MAX_CHN; c++)
-      {
+    	for (c = 0; c < MAX_CHN; c++)
+    	{
         if (eseditpos < songlen[esnum][c]) espos[c] = eseditpos;
         if (esend[c] < espos[c]) esend[c] = 0;
       }
@@ -272,25 +272,25 @@ void orderlistcommands(void)
     case KEY_BACKSPACE:
     if (!shiftpressed)
     {
-      if ((esend[eschn] != eseditpos) && (eseditpos > espos[eschn]))
-      {
+    	if ((esend[eschn] != eseditpos) && (eseditpos > espos[eschn]))
+    	{
         if (eseditpos < songlen[esnum][eschn]) esend[eschn] = eseditpos;
       }
       else esend[eschn] = 0;
     }
     else
     {
-      if ((esend[eschn] != eseditpos) && (eseditpos > espos[eschn]))
-      {
-        for (c = 0; c < MAX_CHN; c++)
-        {
+    	if ((esend[eschn] != eseditpos) && (eseditpos > espos[eschn]))
+    	{
+    	  for (c = 0; c < MAX_CHN; c++)
+    	  {
           if (eseditpos < songlen[esnum][c]) esend[c] = eseditpos;
         }
       }
       else
       {
-        for (c = 0; c < MAX_CHN; c++) esend[c] = 0;
-      }
+    	  for (c = 0; c < MAX_CHN; c++) esend[c] = 0;
+    	}
     }
     break;
 
@@ -317,8 +317,8 @@ void orderlistcommands(void)
           {
             if (songorder[esnum][c][d] < MAX_PATT)
             {
-              epnum[c] = songorder[esnum][c][d];
-              break;
+            	epnum[c] = songorder[esnum][c][d];
+            	break;
             }
           }
         }
@@ -334,8 +334,16 @@ void orderlistcommands(void)
     break;
 
     case KEY_DEL:
-    esmarkchn = -1;
-    deleteorder();
+	if (altpressed)
+	{
+		esmarkchn = -1;
+		insertorder(0);
+	}
+	else
+	{
+		esmarkchn = -1;
+		deleteorder();
+	}
     break;
 
     case KEY_INS:
@@ -613,8 +621,8 @@ void updateviewtopos(void)
     {
       if (songorder[esnum][c][d] < MAX_PATT)
       {
-        epnum[c] = songorder[esnum][c][d];
-        break;
+      	epnum[c] = songorder[esnum][c][d];
+      	break;
       }
     }
   }

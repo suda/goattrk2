@@ -15,7 +15,7 @@ DIRENTRY direntry[MAX_DIRFILES];
 void initpaths(void)
 {
   int c;
-  
+
   for (c = 0; c < MAX_DIRFILES; c++)
      direntry[c].name = NULL;
 
@@ -509,7 +509,7 @@ void editstring(char *buffer, int maxlength)
         buffer[len+1] = 0;
       }
     }
-    if ((key == 8) && (len > 0))
+    if (((key == SDLK_BACKSPACE) || (key == SDLK_DELETE)) && (len > 0))
     {
       buffer[len-1] = 0;
     }
@@ -527,4 +527,3 @@ int cmpname(char *string1, char *string2)
     if ((!char1) || (!char2)) return 0;
   }
 }
-
